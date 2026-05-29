@@ -1,0 +1,63 @@
+services:
+  # Обратный прокси-сервер Nginx (Единая точка входа для HR-менеджера)
+  nginx:
+    image: nginx:alpine
+    container_name: hr_nginx
+    ports:
+      - "443:443" # Проецирование защищенного порта HTTPS на вашу хост-машину
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - hr_secure_network
+    depends_on:
+      - app
+
+  # Сервер приложений Spring Boot (Бэкенд-ядро системы)
+  app:
+    build: .
+    container_name: hr_spring_app
+    expose:
+      - "8080" # Порт доступен ТОЛЬКО внутри закрытой виртуальной сети Docker
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/hr_db
+      - OLLAMA_API_URL=http://ai:11434
+    networks:
+      - hr_secure_network
+    depends_on:
+      - db
+      - ai
+
+  # СУБД PostgreSQL с расширением pgvector (Хранилище данных и векторов)
+  db:
+    image: ankane/pgvector:latest
+    container_name: hr_postgres_db
+    expose:
+      - "5432" # Порт скрыт от внешней сети, доступен только для Spring Boot
+    environment:
+      - POSTGRES_DB=hr_db
+      - POSTGRES_USER=hr_analyst
+      - POSTGRES_PASSWORD=secure_password_hash
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - hr_secure_network
+
+  # Сервер локальных нейросетевых моделей Ollama (ИИ-движок)
+  ai:
+    image: ollama/ollama:latest
+    container_name: hr_ollama_ai
+    expose:
+      - "11434" # Порт скрыт от внешней сети, доступен только для Spring Boot
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - hr_secure_network
+
+volumes:
+  pgdata:
+  ollama_data:
+
+networks:
+  hr_secure_network:
+    driver: bridge # Изолированная локальная программно-определяемая сеть
