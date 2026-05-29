@@ -1,0 +1,22 @@
+### Отправка тестового резюме в сквозной конвейер обработки
+POST http://localhost:8080/api/v1/candidates/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="resume.txt"
+Content-Type: text/plain
+
+Опыт трассировки многослойных плат в САПР Altium Designer более 5 лет.
+--WebAppBoundary
+Content-Disposition: form-data; name="name"
+
+Иванов Иван Иванович
+--WebAppBoundary
+Content-Disposition: form-data; name="email"
+
+ivanov@mail.ru
+--WebAppBoundary
+Content-Disposition: form-data; name="citizenship"
+
+РФ
+--WebAppBoundary--
